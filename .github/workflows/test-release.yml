@@ -11,13 +11,14 @@ jobs:
     steps:
       - name: Test
         run: echo "Hello"
+      - name: Checkout code
+        uses: actions/checkout@v4
       - name: Create Release
-        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: test-${{ github.sha }}
-          release_name: Test Release ${{ github.sha }}
-          body: This is a test release
-          draft: true
-          prerelease: true
+        run: |
+          gh release create "test-${{ github.run_id }}" \
+            --title "Test Release ${{ github.run_id }}" \
+            --notes "This is a test release" \
+            --draft \
+            --prerelease

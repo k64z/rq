@@ -20,4 +20,4 @@ jobs:
         run: |
           gh release create "${{ github.ref_name }}" \
             --title "Release ${{ github.ref_name }}" \
-            --notes "New release!
+            --notes "New release!"

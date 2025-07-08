@@ -1,28 +1,11 @@
 name: Test Release
-
 on:
   push:
-    tags:
-      - 'feature/add-minimal-ci'
-
-permissions:
-  contents: write
-
+    branches:
+      - '**'
 jobs:
-  release:
+  test:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Create Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: 'test-tag-${{ github.sha }}'
-          release_name: 'TEST RELEASE - DELETE ME'
-          body:  'This is a test release'
-          draft: true
-          prerelease: true
+      - name: Test
+        run: echo "Hello"

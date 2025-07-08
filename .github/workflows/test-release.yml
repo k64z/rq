@@ -3,7 +3,7 @@ name: Test Release
 on:
   push:
     tags:
-      - 'feature/*'
+      - 'feature/add-minimal-ci'
 
 permissions:
   contents: write

@@ -26,10 +26,7 @@ jobs:
       with:
         tag_name: ${{ github.event.inputs.tag_name }}
         release_name: TEST Release ${{ github.event.inputs.tag_name }}
-        body: |
-          This is a TEST release
-          
-          **⚠️ DO NOT USE - DELETE THIS RELEASE ⚠️**
+        body: This is a TEST release
         draft: false
         prerelease: true
 

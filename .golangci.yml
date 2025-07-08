@@ -1,0 +1,62 @@
+version: "2"
+run:
+  go: 1.24.3
+linters:
+  enable:
+    - gocritic
+    - gosec
+    - misspell
+    - nilerr
+    - revive
+    - unconvert
+  settings:
+    gocritic:
+      disabled-checks:
+        - unnamedResult
+        - hugeParam
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
+    gosec:
+      excludes:
+        - G404
+    revive:
+      rules:
+        - name: exported
+          disabled: false
+        - name: var-naming
+          disabled: false
+        - name: package-comments
+          disabled: true
+        - name: function-result-limit
+          disabled: true
+  exclusions:
+    generated: lax
+    rules:
+      - linters:
+          - gosec
+        path: _test\.go
+      - linters:
+          - errcheck
+        path: _test\.go
+      - linters:
+          - govet
+        text: 'shadow: declaration of "err" shadows declaration'
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

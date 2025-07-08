@@ -1,11 +1,35 @@
 name: Test Release
+
 on:
-  push:
-    branches:
-      - '**'
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag name for test release'
+        required: true
+        default: 'v0.0.1-test'
+
+permissions:
+  contents: write
+
 jobs:
-  test:
+  test-release:
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Test
-        run: echo "Hello"
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Create Test Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.event.inputs.tag_name }}
+        release_name: TEST Release ${{ github.event.inputs.tag_name }}
+        body: |
+          This is a TEST release
+          
+          **⚠️ DO NOT USE - DELETE THIS RELEASE ⚠️**
+        draft: false
+        prerelease: true
+

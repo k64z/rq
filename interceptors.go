@@ -2,7 +2,10 @@ package rq
 
 import (
 	"context"
+	"log"
 	"net/http"
+	"net/http/httputil"
+	"os"
 )
 
 // RequestInterceptor allows inspection/modification of http.Request
@@ -52,4 +55,42 @@ func (t *InterceptorTransport) RoundTrip(req *http.Request) (*http.Response, err
 	}
 
 	return resp, nil
+}
+
+// DumpTransport creates a transport that dumps requests and responses
+func DumpTransport(base http.RoundTripper, logger *log.Logger) *InterceptorTransport {
+	if base == nil {
+		base = http.DefaultTransport
+	}
+	if logger == nil {
+		logger = log.New(os.Stdout, "[HTTP] ", log.LstdFlags)
+	}
+
+	dumpWrapper := RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
+		resp, err := base.RoundTrip(req)
+
+		// Dump the request regardless of success or failure
+		dump, dumpErr := httputil.DumpRequestOut(req, true)
+		if dumpErr != nil {
+			logger.Printf("Failed to dump request: %v", dumpErr)
+		} else {
+			logger.Printf("=== HTTP REQUEST ===\n%s\n=====================", string(dump))
+		}
+
+		return resp, err
+	})
+
+	return &InterceptorTransport{
+		Base: dumpWrapper,
+		ResponseInterceptor: func(ctx context.Context, resp *http.Response) error {
+			dump, err := httputil.DumpResponse(resp, true)
+			if err != nil {
+				logger.Printf("Failed to dump response: %v", err)
+				return nil
+			}
+
+			logger.Printf("=== HTTP RESPONSE ===\n%s\n======================", string(dump))
+			return nil
+		},
+	}
 }

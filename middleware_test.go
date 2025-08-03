@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/http/cookiejar"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -147,6 +148,100 @@ func TestChainMiddleware(t *testing.T) {
 		if executionOrder[i] != name {
 			t.Errorf("want middleware %s at pos %d, got %s", name, i, executionOrder[i])
 		}
+	}
+}
+
+func TestDumpMiddleware(t *testing.T) {
+	var buf bytes.Buffer
+	logger := log.New(&buf, "[DUMP] ", 0)
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Response-Header", "test-value")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("response body"))
+	}))
+	defer srv.Close()
+
+	ctx := context.Background()
+	middleware := DumpMiddleware(logger)
+
+	resp := Get(srv.URL).
+		Header("X-Request-Header", "test-header").
+		Use(middleware).
+		Do(ctx)
+
+	if resp.Error() != nil {
+		t.Fatal(resp.Error())
+	}
+
+	logOutput := buf.String()
+
+	if !strings.Contains(logOutput, "=== HTTP REQUEST ===") {
+		t.Error("want request dump header")
+	}
+	if !strings.Contains(logOutput, "GET") {
+		t.Error("want GET method in request dump")
+	}
+	if !strings.Contains(logOutput, "X-Request-Header: test-header") {
+		t.Error("want request header in dump")
+	}
+
+	if !strings.Contains(logOutput, "=== HTTP RESPONSE ===") {
+		t.Error("want response dump header")
+	}
+	if !strings.Contains(logOutput, "X-Response-Header: test-value") {
+		t.Error("want response header in dump")
+	}
+	if !strings.Contains(logOutput, "response body") {
+		t.Error("want response body in dump")
+	}
+}
+
+func TestDumpMiddlewarePreservesClientSettings(t *testing.T) {
+	var buf bytes.Buffer
+	logger := log.New(&buf, "[DUMP] ", 0)
+
+	cookieServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/set-cookie" {
+			http.SetCookie(w, &http.Cookie{Name: "test", Value: "value"})
+			w.WriteHeader(http.StatusOK)
+		} else if r.URL.Path == "/check-cookie" {
+			cookie, err := r.Cookie("test")
+			if err != nil || cookie.Value != "value" {
+				w.WriteHeader(http.StatusUnauthorized)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+		}
+	}))
+	defer cookieServer.Close()
+
+	ctx := context.Background()
+	middleware := DumpMiddleware(logger)
+
+	jar, _ := cookiejar.New(nil)
+	client := &http.Client{Jar: jar}
+
+	resp1 := Get(cookieServer.URL + "/set-cookie").
+		Client(client).
+		Use(middleware).
+		Do(ctx)
+
+	if resp1.Error() != nil {
+		t.Fatal(resp1.Error())
+	}
+
+	resp2 := Get(cookieServer.URL + "/check-cookie").
+		Client(client).
+		Use(middleware).
+		Do(ctx)
+
+	if resp2.Error() != nil {
+		t.Fatal(resp2.Error())
+	}
+
+	if resp2.StatusCode != http.StatusOK {
+		t.Errorf("want status 200, got %d - cookie jar not preserved", resp2.StatusCode)
 	}
 }
 

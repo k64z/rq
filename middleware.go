@@ -2,6 +2,7 @@ package rq
 
 import (
 	"log"
+	"net/http"
 	"time"
 )
 
@@ -59,5 +60,29 @@ func TimeoutMiddleware(timeout time.Duration) Middleware {
 func HeadersMiddleware(headers map[string]string) Middleware {
 	return func(r *Request) *Request {
 		return r.Headers(headers)
+	}
+}
+
+// DumpMiddleware enables HTTP request/response dumping using DumpTransport
+func DumpMiddleware(logger *log.Logger) Middleware {
+	return func(r *Request) *Request {
+		if r.err != nil {
+			return r
+		}
+
+		client := r.client
+		if client == nil {
+			client = &http.Client{}
+		}
+
+		// http.Client has only 4 fields. We copy all of them
+		dumpClient := &http.Client{
+			Transport:     DumpTransport(client.Transport, logger),
+			CheckRedirect: client.CheckRedirect,
+			Jar:           client.Jar,
+			Timeout:       client.Timeout,
+		}
+
+		return r.Client(dumpClient)
 	}
 }

@@ -119,6 +119,14 @@ func (r *Response) JSON(v any) error {
 	return nil
 }
 
+// MustJSON decodes the response body as JSON, panicking on error
+// This is useful for cases where you want fail fast on JSON decode errors
+func (r *Response) MustJSON(v any) {
+	if err := r.JSON(v); err != nil {
+		panic(err)
+	}
+}
+
 // BodyReader return an io.Reader for the response body
 func (r *Response) BodyReader() (io.Reader, error) {
 	if r.err != nil {

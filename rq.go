@@ -184,8 +184,8 @@ func QueryParams(params map[string]string) *Request {
 	return New().QueryParams(params)
 }
 
-// Do executes the request and returns a Response
-func (r *Request) Do(ctx context.Context) *Response {
+// DoContext executes the request and returns a Response
+func (r *Request) DoContext(ctx context.Context) *Response {
 	if r.err != nil {
 		return &Response{err: r.err}
 	}
@@ -233,6 +233,11 @@ func (r *Request) Do(ctx context.Context) *Response {
 		Response: resp,
 		body:     body,
 	}
+}
+
+// Do executes the request with background context and returns a Response
+func (r *Request) Do() *Response {
+	return r.DoContext(context.Background())
 }
 
 // Error returns any error that occurred

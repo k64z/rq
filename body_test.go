@@ -2,7 +2,6 @@ package rq
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -32,9 +31,7 @@ func TestBodyString(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	ctx := context.Background()
-
-	resp := Post(srv.URL).BodyString(wantBody).Do(ctx)
+	resp := Post(srv.URL).BodyString(wantBody).Do()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("want status 200, got %d", resp.StatusCode)
@@ -60,14 +57,12 @@ func TestBodyBytes(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	ctx := context.Background()
-
-	resp := Post(srv.URL).BodyBytes(wantBody).Do(ctx)
+	resp := Post(srv.URL).BodyBytes(wantBody).Do()
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("want status 200, got %d", resp.StatusCode)
 	}
 
-	resp = BodyBytes(wantBody).Method(http.MethodPost).URL(srv.URL).Do(ctx)
+	resp = BodyBytes(wantBody).Method(http.MethodPost).URL(srv.URL).Do()
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("want status 200, got %d", resp.StatusCode)
 	}
@@ -89,15 +84,13 @@ func TestBodyForm(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	ctx := context.Background()
-
 	formData := url.Values{
 		"username": {"testuser"},
 		"password": {"testpass"},
 		"remember": {"true"},
 	}
 
-	resp := Post(srv.URL).BodyForm(formData).Do(ctx)
+	resp := Post(srv.URL).BodyForm(formData).Do()
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("want status 200, got %d", resp.StatusCode)
 	}
@@ -133,16 +126,14 @@ func TestBodyReader(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	ctx := context.Background()
-
 	reader1 := strings.NewReader(wantBody)
-	resp := Post(srv.URL).Body(reader1).Do(ctx)
+	resp := Post(srv.URL).Body(reader1).Do()
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("want status 200, got %d", resp.StatusCode)
 	}
 
 	reader2 := strings.NewReader(wantBody)
-	resp = Body(reader2).Method(http.MethodPost).URL(srv.URL).Do(ctx)
+	resp = Body(reader2).Method(http.MethodPost).URL(srv.URL).Do()
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("want status 200, got %d", resp.StatusCode)
 	}
@@ -194,9 +185,7 @@ func TestBodyJSON(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	ctx := context.Background()
-
-	resp := Post(srv.URL).BodyJSON(wantUser).Do(ctx)
+	resp := Post(srv.URL).BodyJSON(wantUser).Do()
 	if resp.StatusCode != http.StatusOK {
 		body, _ := resp.String()
 		t.Errorf("want status 200, got %d: %s", resp.StatusCode, body)
@@ -211,7 +200,7 @@ func TestBodyJSON(t *testing.T) {
 		t.Errorf("want ID %d, got %d", wantUser.ID, gotUser.ID)
 	}
 
-	resp = BodyJSON(wantUser).Method(http.MethodPost).URL(srv.URL).Do(ctx)
+	resp = BodyJSON(wantUser).Method(http.MethodPost).URL(srv.URL).Do()
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("want status 200, got %d", resp.StatusCode)
 	}
@@ -251,10 +240,8 @@ func TestMustJSON(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	ctx := context.Background()
-
 	t.Run("successful decode", func(t *testing.T) {
-		resp := Get(srv.URL + "/valid-user").Do(ctx)
+		resp := Get(srv.URL + "/valid-user").Do()
 
 		var user TestUser
 		resp.MustJSON(&user)
@@ -268,7 +255,7 @@ func TestMustJSON(t *testing.T) {
 	})
 
 	t.Run("panics on malformed JSON", func(t *testing.T) {
-		resp := Get(srv.URL + "/malformed-json").Do(ctx)
+		resp := Get(srv.URL + "/malformed-json").Do()
 
 		var user TestUser
 		defer func() {
@@ -295,7 +282,7 @@ func TestMustJSON(t *testing.T) {
 	})
 
 	t.Run("panics on type mismatch", func(t *testing.T) {
-		resp := Get(srv.URL + "/type-mismatch").Do(ctx)
+		resp := Get(srv.URL + "/type-mismatch").Do()
 
 		var user TestUser
 
@@ -309,7 +296,7 @@ func TestMustJSON(t *testing.T) {
 	})
 
 	t.Run("panics on empty response", func(t *testing.T) {
-		resp := Get(srv.URL + "/empty").Do(ctx)
+		resp := Get(srv.URL + "/empty").Do()
 
 		var user TestUser
 
@@ -323,7 +310,7 @@ func TestMustJSON(t *testing.T) {
 	})
 
 	t.Run("works with different types", func(t *testing.T) {
-		resp := Get(srv.URL + "/array").Do(ctx)
+		resp := Get(srv.URL + "/array").Do()
 
 		var numbers []int
 		resp.MustJSON(&numbers)
@@ -341,7 +328,7 @@ func TestMustJSON(t *testing.T) {
 	})
 
 	t.Run("works with map types", func(t *testing.T) {
-		resp := Get(srv.URL + "/map").Do(ctx)
+		resp := Get(srv.URL + "/map").Do()
 
 		var result map[string]string
 		resp.MustJSON(&result)

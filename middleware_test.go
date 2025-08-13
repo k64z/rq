@@ -2,7 +2,6 @@ package rq
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -22,10 +21,9 @@ func TestLoggingMiddleware(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	ctx := context.Background()
 	middleware := LoggingMiddleware(logger)
 
-	resp := Get(srv.URL).Use(middleware).Do(ctx)
+	resp := Get(srv.URL).Use(middleware).Do()
 	if resp.Error() != nil {
 		t.Fatal(resp.Error())
 	}
@@ -55,10 +53,9 @@ func TestUserAgentMiddleware(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	ctx := context.Background()
 	middleware := UserAgentMiddleware(wantUA)
 
-	resp := Get(srv.URL).Use(middleware).Do(ctx)
+	resp := Get(srv.URL).Use(middleware).Do()
 	if resp.Error() != nil {
 		t.Fatal(resp.Error())
 	}
@@ -71,10 +68,9 @@ func TestTimeoutMiddleware(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	ctx := context.Background()
 	middleware := TimeoutMiddleware(50 * time.Millisecond)
 
-	resp := Get(srv.URL).Use(middleware).Do(ctx)
+	resp := Get(srv.URL).Use(middleware).Do()
 	if resp.Error() == nil {
 		t.Error("want timeout error")
 	}
@@ -96,10 +92,9 @@ func TestHeadersMiddleware(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	ctx := context.Background()
 	middleware := HeadersMiddleware(headers)
 
-	resp := Get(srv.URL).Use(middleware).Do(ctx)
+	resp := Get(srv.URL).Use(middleware).Do()
 	if resp.Error() != nil {
 		t.Fatal(resp.Error())
 	}
@@ -134,10 +129,9 @@ func TestChainMiddleware(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	ctx := context.Background()
 	chain := Chain(midlleware1, midlleware2, midlleware3)
 
-	resp := Get(srv.URL).Use(chain).Do(ctx)
+	resp := Get(srv.URL).Use(chain).Do()
 	if resp.Error() != nil {
 		t.Fatal(resp.Error())
 	}
@@ -162,13 +156,12 @@ func TestDumpMiddleware(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	ctx := context.Background()
 	middleware := DumpMiddleware(logger)
 
 	resp := Get(srv.URL).
 		Header("X-Request-Header", "test-header").
 		Use(middleware).
-		Do(ctx)
+		Do()
 
 	if resp.Error() != nil {
 		t.Fatal(resp.Error())
@@ -216,7 +209,6 @@ func TestDumpMiddlewarePreservesClientSettings(t *testing.T) {
 	}))
 	defer cookieServer.Close()
 
-	ctx := context.Background()
 	middleware := DumpMiddleware(logger)
 
 	jar, _ := cookiejar.New(nil)
@@ -225,7 +217,7 @@ func TestDumpMiddlewarePreservesClientSettings(t *testing.T) {
 	resp1 := Get(cookieServer.URL + "/set-cookie").
 		Client(client).
 		Use(middleware).
-		Do(ctx)
+		Do()
 
 	if resp1.Error() != nil {
 		t.Fatal(resp1.Error())
@@ -234,7 +226,7 @@ func TestDumpMiddlewarePreservesClientSettings(t *testing.T) {
 	resp2 := Get(cookieServer.URL + "/check-cookie").
 		Client(client).
 		Use(middleware).
-		Do(ctx)
+		Do()
 
 	if resp2.Error() != nil {
 		t.Fatal(resp2.Error())
@@ -254,11 +246,9 @@ func TestUseMethodStarting(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	ctx := context.Background()
-
 	resp := Use(func(r *Request) *Request {
 		return r.Header("X-Custom", "value")
-	}).URL(srv.URL).Do(ctx)
+	}).URL(srv.URL).Do()
 
 	if resp.Error() != nil {
 		t.Fatal(resp.Error())

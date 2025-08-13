@@ -67,7 +67,7 @@ func (r *Request) DoWithRetry(ctx context.Context, config *RetryConfig) *Respons
 			r.body = bytes.NewReader(bodyBytes)
 		}
 
-		resp = r.Do(ctx)
+		resp = r.DoContext(ctx)
 
 		if !config.RetryIf(resp) {
 			return resp

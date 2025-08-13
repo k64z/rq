@@ -1,7 +1,6 @@
 package rq
 
 import (
-	"context"
 	"encoding/base64"
 	"net/http"
 	"net/http/httptest"
@@ -43,14 +42,12 @@ func TestBasicAuth(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	ctx := context.Background()
-
-	resp := Get(srv.URL).BasicAuth(wantUser, wantPass).Do(ctx)
+	resp := Get(srv.URL).BasicAuth(wantUser, wantPass).Do()
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("want status 200, got %d", resp.StatusCode)
 	}
 
-	resp = Get(srv.URL).BasicAuth("wrong", "creds").Do(ctx)
+	resp = Get(srv.URL).BasicAuth("wrong", "creds").Do()
 	if resp.StatusCode != http.StatusUnauthorized {
 		t.Errorf("want status 401, got %d", resp.StatusCode)
 	}
@@ -74,9 +71,7 @@ func TestBearerToken(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	ctx := context.Background()
-
-	resp := Get(srv.URL).BearerToken(wantToken).Do(ctx)
+	resp := Get(srv.URL).BearerToken(wantToken).Do()
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("want status 200, got %d", resp.StatusCode)
 	}
@@ -95,9 +90,7 @@ func TestCustomAuth(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	ctx := context.Background()
-
-	resp := Get(srv.URL).Auth("Custom", "custom-test-token").Do(ctx)
+	resp := Get(srv.URL).Auth("Custom", "custom-test-token").Do()
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("want status 200, got %d", resp.StatusCode)
 	}
@@ -126,9 +119,7 @@ func TestCustomAuthProvider(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
-
-	resp := Get(srv.URL).WithAuth(customProvider).Do(ctx)
+	resp := Get(srv.URL).WithAuth(customProvider).Do()
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("want status 200, got %d", resp.StatusCode)
 	}

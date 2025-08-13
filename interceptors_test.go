@@ -39,9 +39,8 @@ func TestInterceptorTransport(t *testing.T) {
 	defer srv.Close()
 
 	client := &http.Client{Transport: transport}
-	ctx := context.Background()
 
-	resp := Get(srv.URL).Client(client).Do(ctx)
+	resp := Get(srv.URL).Client(client).Do()
 	if resp.Error() != nil {
 		t.Fatal(resp.Error())
 	}
@@ -72,9 +71,8 @@ func TestRoundTripperFunc(t *testing.T) {
 	})
 
 	client := &http.Client{Transport: roundTripper}
-	ctx := context.Background()
 
-	resp := Get("https://example.com").Client(client).Do(ctx)
+	resp := Get("https://example.com").Client(client).Do()
 	if resp.Error() != nil {
 		t.Fatal(resp.Error())
 	}

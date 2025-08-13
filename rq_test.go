@@ -1,7 +1,6 @@
 package rq
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -60,8 +59,7 @@ func TestBasicRequests(t *testing.T) {
 			}))
 			defer srv.Close()
 
-			ctx := context.Background()
-			resp := Method(tt.method).URL(srv.URL + tt.path).Do(ctx)
+			resp := Method(tt.method).URL(srv.URL + tt.path).Do()
 
 			if resp.StatusCode != tt.wantCode {
 				t.Errorf("want status %d, got %d", tt.wantCode, resp.StatusCode)
@@ -89,8 +87,6 @@ func TestQueryParameters(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	ctx := context.Background()
-
 	resp := Get(srv.URL).
 		QueryParam("page", "1").
 		QueryParam("limit", "10").
@@ -99,7 +95,7 @@ func TestQueryParameters(t *testing.T) {
 			"filter": "active",
 			"lang":   "en",
 		}).
-		Do(ctx)
+		Do()
 
 	var result map[string][]string
 	if err := resp.JSON(&result); err != nil {
@@ -132,8 +128,6 @@ func TestHeaders(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	ctx := context.Background()
-
 	resp := Get(srv.URL).
 		Header("X-Custom-Header", "value1").
 		Header("X-Another-Header", "value2").
@@ -141,7 +135,7 @@ func TestHeaders(t *testing.T) {
 			"X-Third-Header":  "value3",
 			"X-Fourth-Header": "value4",
 		}).
-		Do(ctx)
+		Do()
 
 	var result map[string]string
 	if err := resp.JSON(&result); err != nil {
@@ -185,15 +179,13 @@ func TestJSONBody(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	ctx := context.Background()
-
 	testData := TestData{
 		Name:  "John Doe",
 		Email: "john@example.com",
 		Age:   30,
 	}
 
-	resp := Post(srv.URL).BodyJSON(testData).Do(ctx)
+	resp := Post(srv.URL).BodyJSON(testData).Do()
 	if resp.StatusCode != http.StatusOK {
 		t.Fatalf("want status 200, got %d", resp.StatusCode)
 	}
@@ -215,14 +207,12 @@ func TestTimeout(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	ctx := context.Background()
-
-	resp := Get(srv.URL).Timeout(50 * time.Millisecond).Do(ctx)
+	resp := Get(srv.URL).Timeout(50 * time.Millisecond).Do()
 	if resp.Error() == nil {
 		t.Error("want timeout error, got nil")
 	}
 
-	resp = Get(srv.URL).Timeout(200 * time.Millisecond).Do(ctx)
+	resp = Get(srv.URL).Timeout(200 * time.Millisecond).Do()
 	if resp.Error() != nil {
 		t.Errorf("want no error, got %v", resp.Error())
 	}
@@ -244,9 +234,7 @@ func TestErrorHandling(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	ctx := context.Background()
-
-	resp := Get(srv.URL + "/404").Do(ctx)
+	resp := Get(srv.URL + "/404").Do()
 	if !resp.IsError() {
 		t.Error("want IsError() to be true for 404")
 	}

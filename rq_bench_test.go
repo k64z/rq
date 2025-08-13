@@ -15,11 +15,9 @@ func BenchmarkSimpleGET(b *testing.B) {
 	}))
 	defer srv.Close()
 
-	ctx := context.Background()
-
 	b.ResetTimer()
 	for b.Loop() {
-		resp := Get(srv.URL).Do(ctx)
+		resp := Get(srv.URL).Do()
 		if resp.Error() != nil {
 			b.Fatal(resp.Error())
 		}
@@ -40,7 +38,7 @@ func BenchmarkComparison(b *testing.B) {
 
 	b.Run("rq", func(b *testing.B) {
 		for b.Loop() {
-			resp := Get(srv.URL).Header("Accept", "application/json").Do(ctx)
+			resp := Get(srv.URL).Header("Accept", "application/json").Do()
 
 			var result map[string]string
 			if err := resp.JSON(&result); err != nil {

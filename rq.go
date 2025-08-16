@@ -240,6 +240,26 @@ func (r *Request) Do() *Response {
 	return r.DoContext(context.Background())
 }
 
+// MustDoContext executes the request with context and panics on error
+// This is useful for cases where you want to fail fast
+func (r *Request) MustDoContext(ctx context.Context) *Response {
+	resp := r.DoContext(ctx)
+	if resp.err != nil {
+		panic(resp.err)
+	}
+	return resp
+}
+
+// MustDo executes the request and panics on error
+// This is useful for cases where you want to fail fast
+func (r *Request) MustDo() *Response {
+	resp := r.DoContext(context.Background())
+	if resp.err != nil {
+		panic(resp.err)
+	}
+	return resp
+}
+
 // Error returns any error that occurred
 func (r *Response) Error() error {
 	return r.err

@@ -1,6 +1,7 @@
 package rq
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -258,4 +259,76 @@ func TestErrorHandling(t *testing.T) {
 	// if httpErr == nil {
 	// 	t.Errorf("want AsHTTPError to return error for 500")
 	// }
+}
+
+func TestMustDoContext(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(100 * time.Millisecond)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	t.Run("successful request", func(t *testing.T) {
+		ctx := context.Background()
+		resp := Get(srv.URL).MustDoContext(ctx)
+
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("want status 200, got %d", resp.StatusCode)
+		}
+	})
+
+	t.Run("panics on context timeout", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Error("MustDoContext should have panicked on timeout")
+			}
+		}()
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+		defer cancel()
+
+		Get(srv.URL).MustDoContext(ctx)
+	})
+
+	t.Run("panics on invalid URL", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Error("MustDoContext should have panicked on invalid URL")
+			}
+		}()
+
+		ctx := context.Background()
+		Get("invalid-url").MustDoContext(ctx)
+	})
+}
+
+func TestMustDo(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("Success"))
+	}))
+	defer srv.Close()
+
+	t.Run("successful request", func(t *testing.T) {
+		resp := Get(srv.URL).MustDo()
+
+		body, err := resp.String()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if body != "Success" {
+			t.Errorf("want body 'Success', got %s", body)
+		}
+	})
+
+	t.Run("panics on network error", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r == nil {
+				t.Error("MustDo should have panicked on invalid URL")
+			}
+		}()
+
+		Get("invalid-url").MustDo()
+	})
 }

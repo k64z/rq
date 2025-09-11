@@ -1,7 +1,10 @@
 package rq
 
 import (
+	"bytes"
 	"context"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -67,7 +70,28 @@ func DumpTransport(base http.RoundTripper, logger *log.Logger) *InterceptorTrans
 	}
 
 	dumpWrapper := RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
+		// Preserve the original body by reading it into memory
+		var bodyBytes []byte
+		var err error
+
+		if req.Body != nil {
+			bodyBytes, err = io.ReadAll(req.Body)
+			if err != nil {
+				return nil, fmt.Errorf("read request body: %w", err)
+			}
+			req.Body.Close()
+
+			// Restore the body for the actual request
+			req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+		}
+
+		// Making the actual request may modify headers and consume body
 		resp, err := base.RoundTrip(req)
+
+		// Restore the body again for dumping the modified request
+		if bodyBytes != nil {
+			req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+		}
 
 		// Dump the request regardless of success or failure
 		dump, dumpErr := httputil.DumpRequestOut(req, true)

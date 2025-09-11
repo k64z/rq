@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -218,5 +219,73 @@ func TestDumpTransportRequestError(t *testing.T) {
 	// Should not have response dump
 	if strings.Contains(logOutput, "=== HTTP RESPONSE ===") {
 		t.Error("should not have response dump on transport error")
+	}
+}
+
+// Regression test for: https://github.com/k64z/rq/issues/10
+// Issue: DumpTransport fails with "ContentLength=X with Body length 0" error
+func TestDumpTransportWithMultipartBody(t *testing.T) {
+	var buf bytes.Buffer
+	logger := log.New(&buf, "", 0)
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		err := r.ParseMultipartForm(1024)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		value := r.FormValue("test_field")
+		if value != "test_value" {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("success"))
+	}))
+	defer ts.Close()
+
+	var formBuf bytes.Buffer
+	writer := multipart.NewWriter(&formBuf)
+
+	err := writer.WriteField("test_field", "test_value")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = writer.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	resp := Post(ts.URL).
+		BodyBytes(formBuf.Bytes()).
+		Header("Content-Type", writer.FormDataContentType()).
+		Use(DumpMiddleware(logger)).
+		Do()
+
+	if resp.Error() != nil {
+		t.Fatal(resp.Error())
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("want status 200, got %d", resp.StatusCode)
+	}
+
+	logOutput := buf.String()
+
+	if strings.Contains(logOutput, "Failed to dump request") {
+		t.Errorf("got dump error in log output: %s", logOutput)
+	}
+
+	if !strings.Contains(logOutput, "=== HTTP REQUEST ===") {
+		t.Error("want request dump header")
+	}
+	if !strings.Contains(logOutput, "test_field") {
+		t.Error("want multipart field in request dump")
+	}
+	if !strings.Contains(logOutput, "test_value") {
+		t.Error("want multipart value in request dump")
 	}
 }

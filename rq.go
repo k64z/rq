@@ -18,6 +18,7 @@ type Request struct {
 	queryParams url.Values
 	body        io.Reader
 	timeout     time.Duration
+	validators  []Validator
 	err         error
 }
 
@@ -229,10 +230,19 @@ func (r *Request) DoContext(ctx context.Context) *Response {
 		}
 	}
 
-	return &Response{
+	response := &Response{
 		Response: resp,
 		body:     body,
 	}
+
+	for _, validator := range r.validators {
+		if err := validator(response); err != nil {
+			response.err = fmt.Errorf("validation failed: %w", err)
+			break
+		}
+	}
+
+	return response
 }
 
 // Do executes the request with background context and returns a Response

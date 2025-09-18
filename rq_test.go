@@ -157,6 +157,111 @@ func TestHeaders(t *testing.T) {
 	}
 }
 
+func TestCookies(t *testing.T) {
+	t.Run("single cookie", func(t *testing.T) {
+		cookie := &http.Cookie{Name: "session", Value: "abc123"}
+
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			c, err := r.Cookie("session")
+			if err != nil || c.Value != "abc123" {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer ts.Close()
+
+		resp := Get(ts.URL).Cookies(cookie).Do()
+		if resp.Error() != nil {
+			t.Fatal(resp.Error())
+		}
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("want status 200, got %d", resp.StatusCode)
+		}
+	})
+
+	t.Run("multiple cookies", func(t *testing.T) {
+		cookies := []*http.Cookie{
+			{Name: "session", Value: "abc123"},
+			{Name: "lang", Value: "en"},
+		}
+
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			session, err := r.Cookie("session")
+			if err != nil || session.Value != "abc123" {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+			lang, err := r.Cookie("lang")
+			if err != nil || lang.Value != "en" {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer ts.Close()
+
+		resp := Get(ts.URL).Cookies(cookies...).Do()
+		if resp.Error() != nil {
+			t.Fatal(resp.Error())
+		}
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("want status 200, got %d", resp.StatusCode)
+		}
+	})
+
+	t.Run("chained cookies", func(t *testing.T) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			session, err := r.Cookie("session")
+			if err != nil || session.Value != "abc123" {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+			lang, err := r.Cookie("lang")
+			if err != nil || lang.Value != "en" {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer ts.Close()
+
+		resp := Get(ts.URL).
+			Cookies(&http.Cookie{Name: "session", Value: "abc123"}).
+			Cookies(&http.Cookie{Name: "lang", Value: "en"}).
+			Do()
+		if resp.Error() != nil {
+			t.Fatal(resp.Error())
+		}
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("want status 200, got %d", resp.StatusCode)
+		}
+	})
+
+	t.Run("no cookies", func(t *testing.T) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if len(r.Cookies()) != 0 {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+		}))
+		defer ts.Close()
+
+		resp := Get(ts.URL).Do()
+		if resp.Error() != nil {
+			t.Fatal(resp.Error())
+		}
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("want status 200, got %d", resp.StatusCode)
+		}
+	})
+}
+
 func TestJSONBody(t *testing.T) {
 	type TestData struct {
 		Name  string `json:"name"`

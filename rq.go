@@ -19,6 +19,7 @@ type Request struct {
 	body        io.Reader
 	timeout     time.Duration
 	validators  []Validator
+	cookies     []*http.Cookie
 	err         error
 }
 
@@ -155,6 +156,20 @@ func (r *Request) Headers(headers map[string]string) *Request {
 	return r
 }
 
+// Cookies creates new request with a cookie
+func Cookies(cookie ...*http.Cookie) *Request {
+	return New().Cookies(cookie...)
+}
+
+// Cookies adds a cookie
+func (r *Request) Cookies(cookie ...*http.Cookie) *Request {
+	if r.err != nil {
+		return r
+	}
+	r.cookies = append(r.cookies, cookie...)
+	return r
+}
+
 // QueryParam creates a new request with a query parameter
 func QueryParam(key, value string) *Request {
 	return New().QueryParam(key, value)
@@ -206,6 +221,10 @@ func (r *Request) DoContext(ctx context.Context) *Response {
 	}
 
 	req.Header = r.headers.Clone()
+
+	for _, cookie := range r.cookies {
+		req.AddCookie(cookie)
+	}
 
 	client := r.client
 
